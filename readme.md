@@ -37,3 +37,10 @@ how to use :
 > <img width="50%"  src="https://github.com/clonerxyz/replit-bail-clo/blob/master/web/c9.JPG"><br/>
 - type 1 on message
 > <img width="50%"  src="https://github.com/clonerxyz/replit-bail-clo/blob/master/web/c10.JPG"><br/>
+
+
+-if error just create
+
+> mkdir baileys_auth_info on dir
+
+- another error just open on issues
