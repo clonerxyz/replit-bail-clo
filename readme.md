@@ -44,3 +44,6 @@ how to use :
 > mkdir baileys_auth_info on dir
 
 - another error just open on issues
+
+
+[![clonerxyz](https://github.com/clonerxyz.png?size=100)](https://github.com/clonerxyz) | [![fadil](https://github.com/fdll14.png?size=100)](https://github.com/fdll14) | [![VilosmZX](https://github.com/VilosmZX.png?size=100)](https://github.com/VilosmZX)
