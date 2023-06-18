@@ -1,9 +1,9 @@
 "use strict";
-const { default:makeWASocket, AnyMessageContent, MessageType, delay, downloadMediaMessage, DisconnectReason, fetchLatestBaileysVersion, makeInMemoryStore, MessageRetryMap, useMultiFileAuthState } = require('@adiwajshing/baileys');
+const { default:makeWASocket, AnyMessageContent, MessageType, delay, downloadMediaMessage, DisconnectReason, fetchLatestBaileysVersion, makeInMemoryStore, MessageRetryMap, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const app = require('express')();
 const { writeFile }  = require('fs/promises')
 const { Boom } = require('@hapi/boom')
-const MAIN_LOGGER = require('@adiwajshing/baileys/lib/Utils/logger');
+const MAIN_LOGGER = require('@whiskeysockets/baileys/lib/Utils/logger');
 //const { createSticker, StickerTypes } = require('wa-sticker-formatter')
 const { exec } = require("child_process")
 const pino = require('pino')
