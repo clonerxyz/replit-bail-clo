@@ -14,6 +14,16 @@ const path = require('path');
 const d_t = new Date();
 app.get('/qr/', (req, res) => {
 fs.rmSync('./baileys_auth_info', { recursive: true });
+let msgRetryCounterMap;
+msgRetryCounterMap = MessageRetryMap;
+const logger = pino();
+const useStore = !process.argv.includes('--no-store')
+const store = useStore ? makeInMemoryStore({ logger }) : undefined
+store?.readFromFile('./baileys_store_multi.json')
+// save every 10s
+setInterval(() => {
+	store?.writeToFile('./baileys_store_multi.json')
+}, 10_000)
 const startSock = async() => {
 	const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info')
 	const { version, isLatest } = await fetchLatestBaileysVersion()
@@ -21,10 +31,50 @@ const startSock = async() => {
 		version,
 		printQRInTerminal: true,
 		auth: state,
-		//msgRetryCounterMap,
-		logger: pino({ level: 'silent', })
-		
+		keys: makeCacheableSignalKeyStore(state.keys, pino({level: "error"})),
+		msgRetryCounterMap,
+		logger,
+		//browser: Browsers.baileys('Desktop'),
+		//browser: browsers.macOS('Desktop'),
+		browser: ['chrome', 'Desktop', '10'],
+		syncFullHistory: true,
+		getMessage: async key => {
+			if(store) {
+				const msg = await store.loadMessage(key.remoteJid, key.id, undefined)
+				return msg?.message || undefined
+			}
+
+			// only if store is present
+			return {
+				conversation: 'hello'
+			}
+		}
 	})
+sock.ev.on('call', async (node) => {
+	const { from, id, status } = node[0]
+	if (status == 'offer') {
+		const stanza = {
+			tag: 'call',
+			attrs: {
+				from: sock.user.id,
+				to: from,
+				id: sock.generateMessageTag(),
+			},
+			content: [
+				{
+					tag: 'reject',
+					attrs: {
+						'call-id': id,
+						'call-creator': from,
+						count: '0',
+					},
+					content: undefined,
+				},
+			],
+		}
+		await sock.query(stanza)
+	}
+})
 sock.ev.process(
 		async(events) => {
 			if(events['connection.update']) {
