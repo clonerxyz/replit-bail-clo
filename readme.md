@@ -37,7 +37,8 @@ how to use :
 > <img width="50%"  src="https://github.com/clonerxyz/replit-bail-clo/blob/master/web/c9.JPG"><br/>
 - type 1 on message
 > <img width="50%"  src="https://github.com/clonerxyz/replit-bail-clo/blob/master/web/c10.JPG"><br/>
-
+- forward function
+> curl ip-local:3xxx/sendz/62xxxx/blablablalbal
 
 -if error just create
 
