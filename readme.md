@@ -21,7 +21,7 @@ how to use :
 > <img width="50%"  src="https://github.com/clonerxyz/replit-bail-clo/blob/master/web/c3.JPG"><br/>
 - cd replit-bail-clo/
 > <img width="50%"  src="https://github.com/clonerxyz/replit-bail-clo/blob/master/web/c11.JPG"><br/>
-- npm install
+- npm install --force or --legacy-peer-deps
 > <img width="50%"  src="https://github.com/clonerxyz/replit-bail-clo/blob/master/web/c4.JPG"><br/>
 - mkdir baileys_auth_info
 > <img width="50%"  src="https://github.com/clonerxyz/replit-bail-clo/blob/master/web/c6.JPG"><br/>
