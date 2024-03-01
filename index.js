@@ -1,11 +1,28 @@
 "use strict";
-const { default:makeWASocket, AnyMessageContent, MessageType, delay, downloadMediaMessage, DisconnectReason, fetchLatestBaileysVersion, makeInMemoryStore, MessageRetryMap, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+const {
+    default: makeWASocket,
+    AnyMessageContent,
+    MessageType,
+    delay,
+    downloadMediaMessage,
+    DisconnectReason,
+    fetchLatestBaileysVersion,
+    makeInMemoryStore,
+    MessageRetryMap,
+    useMultiFileAuthState
+} = require('@whiskeysockets/baileys');
 const app = require('express')();
-const { writeFile }  = require('fs/promises')
-const { Boom } = require('@hapi/boom')
+const {
+    writeFile
+} = require('fs/promises')
+const {
+    Boom
+} = require('@hapi/boom')
 const MAIN_LOGGER = require('@whiskeysockets/baileys/lib/Utils/logger');
 //const { createSticker, StickerTypes } = require('wa-sticker-formatter')
-const { exec } = require("child_process")
+const {
+    exec
+} = require("child_process")
 const pino = require('pino')
 const str_replace = require('str_replace')
 const fs = require('fs');
@@ -13,164 +30,207 @@ const qrimg = require('qrcode');
 const path = require('path');
 const d_t = new Date();
 app.get('/qr/', (req, res) => {
-fs.rmSync('./baileys_auth_info', { recursive: true });
-let msgRetryCounterMap;
-msgRetryCounterMap = MessageRetryMap;
-const logger = pino();
-const useStore = !process.argv.includes('--no-store')
-const store = useStore ? makeInMemoryStore({ logger }) : undefined
-store?.readFromFile('./baileys_store_multi.json')
-// save every 10s
-setInterval(() => {
-	store?.writeToFile('./baileys_store_multi.json')
-}, 10_000)
-const startSock = async() => {
-	const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info')
-	const { version, isLatest } = await fetchLatestBaileysVersion()
-	const sock = makeWASocket({
-		version,
-		printQRInTerminal: true,
-		auth: state,
-		keys: makeCacheableSignalKeyStore(state.keys, pino({level: "error"})),
-		msgRetryCounterMap,
-		logger,
-		//browser: Browsers.baileys('Desktop'),
-		//browser: browsers.macOS('Desktop'),
-		browser: ['chrome', 'Desktop', '10'],
-		syncFullHistory: true,
-		getMessage: async key => {
-			if(store) {
-				const msg = await store.loadMessage(key.remoteJid, key.id, undefined)
-				return msg?.message || undefined
-			}
+    fs.rmSync('./baileys_auth_info', {
+        recursive: true
+    });
+    let msgRetryCounterMap;
+    msgRetryCounterMap = MessageRetryMap;
+    const logger = pino();
+    const useStore = !process.argv.includes('--no-store')
+    const store = useStore ? makeInMemoryStore({
+        logger
+    }) : undefined
+    store?.readFromFile('./baileys_store_multi.json')
+    // save every 10s
+    setInterval(() => {
+        store?.writeToFile('./baileys_store_multi.json')
+    }, 10_000)
+    const startSock = async () => {
+        const {
+            state,
+            saveCreds
+        } = await useMultiFileAuthState('baileys_auth_info')
+        const {
+            version,
+            isLatest
+        } = await fetchLatestBaileysVersion()
+        const sock = makeWASocket({
+            version,
+            printQRInTerminal: true,
+            auth: state,
+            keys: makeCacheableSignalKeyStore(state.keys, pino({
+                level: "error"
+            })),
+            msgRetryCounterMap,
+            logger,
+            //browser: Browsers.baileys('Desktop'),
+            //browser: browsers.macOS('Desktop'),
+            browser: ['chrome', 'Desktop', '10'],
+            syncFullHistory: true,
+            getMessage: async key => {
+                if (store) {
+                    const msg = await store.loadMessage(key.remoteJid, key.id, undefined)
+                    return msg?.message || undefined
+                }
 
-			// only if store is present
-			return {
-				conversation: 'hello'
-			}
-		}
-	})
-sock.ev.on('call', async (node) => {
-	const { from, id, status } = node[0]
-	if (status == 'offer') {
-		const stanza = {
-			tag: 'call',
-			attrs: {
-				from: sock.user.id,
-				to: from,
-				id: sock.generateMessageTag(),
-			},
-			content: [
-				{
-					tag: 'reject',
-					attrs: {
-						'call-id': id,
-						'call-creator': from,
-						count: '0',
-					},
-					content: undefined,
-				},
-			],
-		}
-		await sock.query(stanza)
-	}
-})
-sock.ev.process(
-		async(events) => {
-			if(events['connection.update']) {
-				const update = events['connection.update']
-				const { connection, lastDisconnect } = update
-				if(connection === 'close') {
-					if (fs.existsSync(path.resolve(__dirname, './', 'ano.png'))) 
-					{ 
-					  fs.unlinkSync(path.resolve(__dirname, './', 'ano.png'));
-					  
+                // only if store is present
+                return {
+                    conversation: 'hello'
+                }
+            }
+        })
+        app.get('/send/:tagNum/:tagText', (req, res) => {
+            const sendid = async () => {
+                const now = new Date();
+                let formattedDate = now.getFullYear() + "-" + addLeadingZeros(now.getMonth() + 1) + "-" + addLeadingZeros(now.getDate()) + " " + addLeadingZeros(now.getHours()) + ":" + addLeadingZeros(now.getMinutes()) + ":" + addLeadingZeros(now.getSeconds())
+                await sock.sendMessage(`${req?.params?.tagNum}@s.whatsapp.net`, {
+                    text: `${formattedDate}${req?.params?.tagText}`
+                })
+            }
+            sendid();
+            res.setHeader('Content-Type', 'application/json');
+            res.send(JSON.stringify({
+                text: "" + req.params.tagText + ""
+            }));
+        });
+        app.get('/sendz/:tagNum/:tagText', (req, res) => {
+            const sendid = async () => {
+                const now = new Date();
+                let formattedDate = now.getFullYear() + "-" + addLeadingZeros(now.getMonth() + 1) + "-" + addLeadingZeros(now.getDate()) + " " + addLeadingZeros(now.getHours()) + ":" + addLeadingZeros(now.getMinutes()) + ":" + addLeadingZeros(now.getSeconds())
+                await sock.sendMessage(`${req?.params?.tagNum}@s.whatsapp.net`, {
+                    text: `${req?.params?.tagText}`
+                })
+            }
+            sendid();
+            res.setHeader('Content-Type', 'application/json');
+            res.send(JSON.stringify({
+                text: "" + req.params.tagText + ""
+            }));
+        });
+        sock.ev.on('call', async (node) => {
+            const {
+                from,
+                id,
+                status
+            } = node[0]
+            if (status == 'offer') {
+                const stanza = {
+                    tag: 'call',
+                    attrs: {
+                        from: sock.user.id,
+                        to: from,
+                        id: sock.generateMessageTag(),
+                    },
+                    content: [{
+                        tag: 'reject',
+                        attrs: {
+                            'call-id': id,
+                            'call-creator': from,
+                            count: '0',
+                        },
+                        content: undefined,
+                    }, ],
+                }
+                await sock.query(stanza)
+            }
+        })
+        sock.ev.process(
+            async (events) => {
+                if (events['connection.update']) {
+                    const update = events['connection.update']
+                    const {
+                        connection,
+                        lastDisconnect
+                    } = update
+                    if (connection === 'close') {
+                        if (fs.existsSync(path.resolve(__dirname, './', 'ano.png'))) {
+                            fs.unlinkSync(path.resolve(__dirname, './', 'ano.png'));
 
-					}
-					if(lastDisconnect?.error?.output?.statusCode === DisconnectReason.restartRequired) {
-						startSock()
-					}
-					if(lastDisconnect?.error?.output?.statusCode === DisconnectReason.timedOut) {
-					}
-				}
-				else if (update.qr){
-					qrimg.toFile(path.resolve(__dirname, './', 'ano.png'), update.qr);
-					console.log('qr generated on web'+update.qr+'')
-				}
-				else if(connection === 'open') {
-					res.end()
-					console.log('connected')
-				}
-			}
-			if(events['creds.update']) {
-				await saveCreds()
-			}
-			if(events['messages.upsert']) {
-				const upsert = events['messages.upsert']
-				if(upsert.type === 'notify') {
-					try {
-					for(const msg of upsert.messages) {   
-						const body = (msg.message?.extendedTextMessage?.text);
-						const group = (msg.message?.conversation);
-						const namez = (msg.pushName);
-						const didi = (msg.key.remoteJid)
-						const didix = str_replace('@s.whatsapp.net','', didi)
-						const alls = (msg.message?.extendedTextMessage?.text || msg.message?.conversation || msg.message?.listResponseMessage?.title || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption)
-						const list = (msg.message?.listResponseMessage?.title);
-						const stsx = (msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption);
-						const sendMessageWTyping = async(msg, didi) => {
-							await sock.presenceSubscribe(didi)
-							await delay(500)
 
-							await sock.sendPresenceUpdate('composing', didi)
-							await delay(2000)
-
-							await sock.sendPresenceUpdate('paused', didi)
-
-							await sock.sendMessage(didi, msg)
-						}
-						fs.appendFile('log.txt', `nomor : ${didix} nama : ${namez} [pesan : ${alls}]\n`, function (err) {
-						  if (err) throw err;
-						  //console.log('Saved!');
-						});
-						console.log(`nomor : ${didix} nama : ${namez} [pesan : ${alls}]`)
-						
-						//const stsx = (msg.message?.videoMessage?.caption);
-						if (alls?.startsWith('cl')){
-							const txt = (alls?.split("|")[1])
-							const it = (alls?.split("|")[2])
-							//console.log(`${it} ${txt}`)
-							await sock.readMessages([msg.key])
-							await sendMessageWTyping({text: `${txt}`}, it)
                         }
-						else if (body === '1' || group === '1'){
-                            await sock.readMessages([msg.key])
-							
-                            await sendMessageWTyping({text: "hallo"}, msg.key.remoteJid)
+                        if (lastDisconnect?.error?.output?.statusCode === DisconnectReason.restartRequired) {
+                            startSock()
                         }
-						
-						
-					}
-					
-				}
-				catch (e) {
-					console.log(e);
-					}
-				}
-			
-			}
-		}
-	)
+                        if (lastDisconnect?.error?.output?.statusCode === DisconnectReason.timedOut) {}
+                    } else if (update.qr) {
+                        qrimg.toFile(path.resolve(__dirname, './', 'ano.png'), update.qr);
+                        console.log('qr generated on web' + update.qr + '')
+                    } else if (connection === 'open') {
+                        res.end()
+                        console.log('connected')
+                    }
+                }
+                if (events['creds.update']) {
+                    await saveCreds()
+                }
+                if (events['messages.upsert']) {
+                    const upsert = events['messages.upsert']
+                    if (upsert.type === 'notify') {
+                        try {
+                            for (const msg of upsert.messages) {
+                                const body = (msg.message?.extendedTextMessage?.text);
+                                const group = (msg.message?.conversation);
+                                const namez = (msg.pushName);
+                                const didi = (msg.key.remoteJid)
+                                const didix = str_replace('@s.whatsapp.net', '', didi)
+                                const alls = (msg.message?.extendedTextMessage?.text || msg.message?.conversation || msg.message?.listResponseMessage?.title || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption)
+                                const list = (msg.message?.listResponseMessage?.title);
+                                const stsx = (msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption);
+                                const sendMessageWTyping = async (msg, didi) => {
+                                    await sock.presenceSubscribe(didi)
+                                    await delay(500)
 
-	return sock
-}
+                                    await sock.sendPresenceUpdate('composing', didi)
+                                    await delay(2000)
 
-startSock()
-res.set("Content-Type", "text/html");
-	//OR
-	res.setHeader("Content-Type", "text/html");
+                                    await sock.sendPresenceUpdate('paused', didi)
 
-	res.send(`
+                                    await sock.sendMessage(didi, msg)
+                                }
+                                fs.appendFile('log.txt', `nomor : ${didix} nama : ${namez} [pesan : ${alls}]\n`, function(err) {
+                                    if (err) throw err;
+                                    //console.log('Saved!');
+                                });
+                                console.log(`nomor : ${didix} nama : ${namez} [pesan : ${alls}]`)
+
+                                //const stsx = (msg.message?.videoMessage?.caption);
+                                if (alls?.startsWith('cl')) {
+                                    const txt = (alls?.split("|")[1])
+                                    const it = (alls?.split("|")[2])
+                                    //console.log(`${it} ${txt}`)
+                                    await sock.readMessages([msg.key])
+                                    await sendMessageWTyping({
+                                        text: `${txt}`
+                                    }, it)
+                                } else if (body === '1' || group === '1') {
+                                    await sock.readMessages([msg.key])
+
+                                    await sendMessageWTyping({
+                                        text: "hallo"
+                                    }, msg.key.remoteJid)
+                                }
+
+
+                            }
+
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    }
+
+                }
+            }
+        )
+
+        return sock
+    }
+
+    startSock()
+    res.set("Content-Type", "text/html");
+    //OR
+    res.setHeader("Content-Type", "text/html");
+
+    res.send(`
 	<head>
         
         <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.min.css'>
@@ -221,13 +281,13 @@ res.set("Content-Type", "text/html");
 	`);
 });
 app.get('/qrimg/', (req, res) => {
-res.sendFile(__dirname + '/ano.png');
+    res.sendFile(__dirname + '/ano.png');
 });
 
 app.get('/', (req, res) => {
-res.sendFile(__dirname + '/log.txt');
+    res.sendFile(__dirname + '/log.txt');
 });
 const port = process.env.PORT || 3111
 app.listen(port, () => {
-	console.log(`Example app listening at http://localhost:${port}`)
+    console.log(`Example app listening at http://localhost:${port}`)
 })
